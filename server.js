@@ -52,8 +52,19 @@ const main = async () => {
 
         app.get("/livres", async (req, res) => {
             try {
-                const result = await db.query("SELECT * FROM livres")
-                res.status(200).json(result.rows)
+                const {disponible} = req.query;
+                let result;
+                if (disponible !== undefined) {
+                    result = await db.query(
+                        "SELECT * FROM livres WHERE disponible = $1",
+                        [disponible === "true"]
+                    );
+                } else {
+                    result = await db.query(
+                        "SELECT * FROM livres"
+                    );
+                }
+                res.status(200).json(result.rows);
             } catch (err) {
                 console.log(err)
                 res.status(500).json({
@@ -61,6 +72,40 @@ const main = async () => {
                 });
             }
             });
+
+            app.get("/livres/search", async (req, res) => {
+                try {
+                    const { categorie } = req.query;
+
+                    const resurt = await db.query(
+                        "SELECT * FROM livres WHERE categorie = $1",
+                        [categorie]
+                    );
+
+                    res.status(200).json(resurt.rows);
+                } catch (err) {
+                    console.log(err)
+                    res.status(500).json({
+                        message: "server error"
+                    });
+                }
+            });
+            
+            app.get("/stats/total", async (req, res) => {
+                try {
+                    const result = await db.query(
+                        "SELECT COUNT(*) AS total FROM livres"
+                    );
+
+                    res.status(200).json(result.rows[0]);
+                } catch (err) {
+                    console.log(err)
+                    res.status(500).json({
+                        message: "server error"
+                    });
+                }
+            });
+
             app.get("/livres/:id", async (req, res) => {
                 try {
                     const { id } = req.params;
@@ -128,6 +173,8 @@ const main = async () => {
                     });
                 }
             });
+
+
 
         app.listen(5020, () => console.log("This app is listening on port 5020"))
         } catch (err) {
